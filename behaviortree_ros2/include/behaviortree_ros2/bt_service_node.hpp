@@ -286,11 +286,25 @@ inline bool RosServiceNode<T>::createClient(const std::string& service_name)
   }
   service_name_ = service_name;
 
+  if (wait_for_service_timeout_.count() < 0) {
+    RCLCPP_INFO(logger(), "%s: Waiting for service with name '%s'...",
+                  name().c_str(), service_name_.c_str());
+  } else {
+    RCLCPP_DEBUG(logger(), "%s: Waiting %d s for service with name '%s'...",
+                  name().c_str(), wait_for_service_timeout_.count() / 1000, service_name_.c_str());
+  }
+
   bool found = srv_instance_->service_client->wait_for_service(wait_for_service_timeout_);
   if(!found)
   {
     RCLCPP_ERROR(logger(), "%s: Service with name '%s' is not reachable.", name().c_str(),
                  service_name_.c_str());
+  } else if (wait_for_service_timeout_.count() < 0) {
+    RCLCPP_INFO(logger(), "%s: service with name '%s' is ready.",
+                  name().c_str(), service_name_.c_str());
+  } else {
+    RCLCPP_DEBUG(logger(), "%s: service with name '%s' is ready.",
+                  name().c_str(), service_name_.c_str());
   }
   return found;
 }

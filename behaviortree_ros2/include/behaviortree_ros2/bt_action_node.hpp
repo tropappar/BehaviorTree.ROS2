@@ -318,12 +318,26 @@ inline bool RosActionNode<T>::createClient(const std::string& action_name)
 
   action_name_ = action_name;
 
+  if (wait_for_server_timeout_.count() < 0) {
+    RCLCPP_INFO(logger(), "%s: Waiting for action server with name '%s'...",
+                  name().c_str(), action_name_.c_str());
+  } else {
+    RCLCPP_DEBUG(logger(), "%s: Waiting %d s for action server with name '%s'...",
+                  name().c_str(), wait_for_server_timeout_.count() / 1000, action_name_.c_str());
+  }
+
   bool found =
       client_instance_->action_client->wait_for_action_server(wait_for_server_timeout_);
   if(!found)
   {
     RCLCPP_ERROR(logger(), "%s: Action server with name '%s' is not reachable.",
                  name().c_str(), action_name_.c_str());
+  } else if (wait_for_server_timeout_.count() < 0) {
+    RCLCPP_INFO(logger(), "%s: Action server with name '%s' is ready.",
+                  name().c_str(), action_name_.c_str());
+  } else {
+    RCLCPP_DEBUG(logger(), "%s: Action server with name '%s' is ready.",
+                  name().c_str(), action_name_.c_str());
   }
   return found;
 }
