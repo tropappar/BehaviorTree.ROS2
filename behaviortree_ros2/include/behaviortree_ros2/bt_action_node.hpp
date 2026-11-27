@@ -397,6 +397,7 @@ inline NodeStatus RosActionNode<T>::tick()
 
     goal_received_ = false;
     future_goal_handle_ = {};
+    goal_handle_ = {};
     on_feedback_state_change_ = NodeStatus::RUNNING;
     result_ = {};
 
@@ -422,7 +423,7 @@ inline NodeStatus RosActionNode<T>::tick()
         };
     //--------------------
     goal_options.result_callback = [this](const WrappedResult& result) {
-      if(goal_handle_->get_goal_id() == result.goal_id)
+      if(goal_handle_ && goal_handle_->get_goal_id() == result.goal_id)
       {
         RCLCPP_DEBUG(logger(), "result_callback");
         result_ = result;
@@ -543,12 +544,19 @@ inline void RosActionNode<T>::cancelGoal()
       if(ret != rclcpp::FutureReturnCode::SUCCESS)
       {
         // In that case the goal was not accepted or timed out so probably we should do nothing.
+        RCLCPP_WARN(logger(), "No response to the goal on action server %s within the server "
+                    "timeout, cannot cancel it", action_name_.c_str());
         return;
       }
       else
       {
         goal_handle_ = future_goal_handle_.get();
         future_goal_handle_ = {};
+        if(!goal_handle_)
+        {
+          // The server rejected the goal: there is nothing to cancel.
+          return;
+        }
       }
     }
     else
